@@ -14,7 +14,7 @@ namespace Lumberjacking;
 public class Lumberjacking : BaseUnityPlugin
 {
 	private const string ModName = "Lumberjacking";
-	private const string ModVersion = "1.0.0";
+	private const string ModVersion = "1.0.1";
 	private const string ModGUID = "org.bepinex.plugins.lumberjacking";
 
 	private static readonly ConfigSync configSync = new(ModGUID) { DisplayName = ModName, CurrentVersion = ModVersion };
@@ -24,6 +24,7 @@ public class Lumberjacking : BaseUnityPlugin
 	private static ConfigEntry<float> damageToTreesFactor = null!;
 	private static ConfigEntry<float> damageFromTreesFactor = null!;
 	private static ConfigEntry<float> forestMovementSpeedFactor = null!;
+	private static ConfigEntry<float> experienceGainedFactor = null!;
 
 	private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
 	{
@@ -42,7 +43,7 @@ public class Lumberjacking : BaseUnityPlugin
 		On = 1,
 		Off = 0
 	}
-	
+
 	private static Skill lumberjacking = null!;
 
 	public void Awake()
@@ -51,13 +52,16 @@ public class Lumberjacking : BaseUnityPlugin
 		lumberjacking.Description.English("Increases damage dealt to trees, item yield from trees and reduces damage taken from falling trees. Increases movement speed in forests.");
 		lumberjacking.Name.German("Holzfällerei");
 		lumberjacking.Description.German("Erhöht den Schaden an Bäumen, sowie die Ausbeute von Bäumen und reduziert den erlittenen Schaden durch Baumschlag. Erhöht die Bewegungsgeschwindigkeit in Wäldern.");
-		
+
 		serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On, "If on, the configuration is locked and can be changed by server admins only.");
 		configSync.AddLockingConfigEntry(serverConfigLocked);
 		lumberjackingYieldFactor = config("1 - General", "Tree item yield modifier at level 100", 2f, new ConfigDescription("Item yield from trees will be modified by this value at skill level 100.", new AcceptableValueRange<float>(1f, 5f)));
 		damageToTreesFactor = config("1 - General", "Damage to trees modifier at level 100", 3f, new ConfigDescription("Damage dealt to trees will be modified by this value at skill level 100.", new AcceptableValueRange<float>(1f, 5f)));
 		damageFromTreesFactor = config("1 - General", "Tree fall damage modifier at level 100", 0.3f, new ConfigDescription("Damage from falling trees will be modified by this value at skill level 100.", new AcceptableValueRange<float>(0.00f, 1f)));
 		forestMovementSpeedFactor = config("1 - General", "Movement speed modifier in forests at level 100", 1.1f, new ConfigDescription("Movement speed in forests will be modified by this value at skill level 100.", new AcceptableValueRange<float>(1f, 2f)));
+		experienceGainedFactor = config("2 - Other", "Skill Experience Gain Factor", 1f, new ConfigDescription("Factor for experience gained for the lumberjacking skill.", new AcceptableValueRange<float>(0.01f, 5f)));
+		experienceGainedFactor.SettingChanged += (_, _) => lumberjacking.SkillGainFactor = experienceGainedFactor.Value;
+		lumberjacking.SkillGainFactor = experienceGainedFactor.Value;
 
 		Assembly assembly = Assembly.GetExecutingAssembly();
 		Harmony harmony = new(ModGUID);
@@ -85,7 +89,7 @@ public class Lumberjacking : BaseUnityPlugin
 	}
 
 	[HarmonyPatch]
-	class RemoveWoodcuttingFromSkillFunctions
+	private class RemoveWoodcuttingFromSkillFunctions
 	{
 		public static IEnumerable<MethodBase> TargetMethods() => new[]
 		{
@@ -101,12 +105,12 @@ public class Lumberjacking : BaseUnityPlugin
 			}
 		}
 	}
-	
+
 	[HarmonyPatch(typeof(Skills), nameof(Skills.GetSkill))]
 	public class ReturnDummyWoodcuttingSkill
 	{
 		public static Skills.Skill? lastSkill = null;
-		
+
 		[UsedImplicitly]
 		public static bool Prefix(Skills.SkillType skillType, ref Skills.Skill __result)
 		{
@@ -135,7 +139,7 @@ public class Lumberjacking : BaseUnityPlugin
 			return true;
 		}
 	}
-	
+
 	[HarmonyPatch(typeof(Skills), nameof(Skills.IsSkillValid))]
 	public class MarkWoodcuttingSkillInvalid
 	{
@@ -169,6 +173,7 @@ public class Lumberjacking : BaseUnityPlugin
 	public class PreserveWoodcuttingSkillValueSave
 	{
 		public static Skills.Skill? woodCuttingToSave = null;
+
 		private static void Prefix(Skills __instance)
 		{
 			if (woodCuttingToSave is not null)
@@ -207,6 +212,7 @@ public class Lumberjacking : BaseUnityPlugin
 	public class SetTreeFlag
 	{
 		public static bool hitByTree = false;
+
 		private static void Prefix(ImpactEffect __instance)
 		{
 			if (__instance.GetComponent<TreeLog>())
@@ -238,7 +244,7 @@ public class Lumberjacking : BaseUnityPlugin
 			__instance.m_nview.Register("Lumberjacking IncreaseSkill", (long _, int factor) => __instance.RaiseSkill("Lumberjacking", factor));
 		}
 	}
-	
+
 	[HarmonyPatch(typeof(Player), nameof(Player.Update))]
 	public class PlayerUpdate
 	{
@@ -261,7 +267,7 @@ public class Lumberjacking : BaseUnityPlugin
 				hitData.m_damage.m_chop *= 1 + player.GetSkillFactor("Lumberjacking") * damageToTreesFactor.Value;
 			}
 		}
-	}	
+	}
 
 	[HarmonyPatch(typeof(DropTable), nameof(DropTable.GetDropList), typeof(int))]
 	private class IncreaseItemYield
@@ -309,7 +315,7 @@ public class Lumberjacking : BaseUnityPlugin
 
 		private static void Finalizer() => IsLumberjacking = false;
 	}
-	
+
 	[HarmonyPatch(typeof(TreeBase), nameof(TreeBase.RPC_Damage))]
 	public static class SetLumberjackingFlagTreeBase
 	{
@@ -338,7 +344,7 @@ public class Lumberjacking : BaseUnityPlugin
 			}
 		}
 	}
-	
+
 	[HarmonyPatch(typeof(Player), nameof(Player.GetJogSpeedFactor))]
 	public static class IncreaseJogMovementSpeedInForest
 	{
