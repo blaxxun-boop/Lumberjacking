@@ -11,10 +11,11 @@ using UnityEngine;
 namespace Lumberjacking;
 
 [BepInPlugin(ModGUID, ModName, ModVersion)]
+[BepInIncompatibility("org.bepinex.plugins.valheim_plus")]
 public class Lumberjacking : BaseUnityPlugin
 {
 	private const string ModName = "Lumberjacking";
-	private const string ModVersion = "1.0.3";
+	private const string ModVersion = "1.0.4";
 	private const string ModGUID = "org.bepinex.plugins.lumberjacking";
 
 	private static readonly ConfigSync configSync = new(ModGUID) { DisplayName = ModName, CurrentVersion = ModVersion };
@@ -25,6 +26,7 @@ public class Lumberjacking : BaseUnityPlugin
 	private static ConfigEntry<float> damageFromTreesFactor = null!;
 	private static ConfigEntry<float> forestMovementSpeedFactor = null!;
 	private static ConfigEntry<float> experienceGainedFactor = null!;
+	private static ConfigEntry<int> experienceLoss = null!;
 
 	private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
 	{
@@ -62,6 +64,9 @@ public class Lumberjacking : BaseUnityPlugin
 		experienceGainedFactor = config("2 - Other", "Skill Experience Gain Factor", 1f, new ConfigDescription("Factor for experience gained for the lumberjacking skill.", new AcceptableValueRange<float>(0.01f, 5f)));
 		experienceGainedFactor.SettingChanged += (_, _) => lumberjacking.SkillGainFactor = experienceGainedFactor.Value;
 		lumberjacking.SkillGainFactor = experienceGainedFactor.Value;
+		experienceLoss = config("2 - Other", "Skill Experience Loss", 0, new ConfigDescription("How much experience to lose in the lumberjacking skill on death.", new AcceptableValueRange<int>(0, 100)));
+		experienceLoss.SettingChanged += (_, _) => lumberjacking.SkillLoss = experienceLoss.Value;
+		lumberjacking.SkillLoss = experienceLoss.Value;
 
 		Assembly assembly = Assembly.GetExecutingAssembly();
 		Harmony harmony = new(ModGUID);
