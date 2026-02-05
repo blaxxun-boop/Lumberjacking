@@ -70,6 +70,7 @@
             <SpecificVersion>false</SpecificVersion>
         </Reference>
         <Reference Include="ServerSync, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <SpecificVersion>false</SpecificVersion>
             <HintPath>Libs\ServerSync.dll</HintPath>
         </Reference>
         <Reference Include="SkillManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
@@ -96,8 +97,12 @@
     </ItemGroup>
     <ItemGroup>
         <Content Include="ILRepack.targets"/>
-        <Content Include="Libs\ServerSync.dll"/>
-        <Content Include="Libs\SkillManager.dll"/>
+        <Content Include="Libs\ServerSync.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="Libs\SkillManager.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
     <ItemGroup>
       <None Include="App.config" />
