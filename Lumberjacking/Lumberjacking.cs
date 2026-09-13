@@ -15,7 +15,7 @@ namespace Lumberjacking;
 public class Lumberjacking : BaseUnityPlugin
 {
 	private const string ModName = "Lumberjacking";
-	private const string ModVersion = "1.0.6";
+	private const string ModVersion = "1.0.7";
 	private const string ModGUID = "org.bepinex.plugins.lumberjacking";
 
 	private static readonly ConfigSync configSync = new(ModGUID) { DisplayName = ModName, CurrentVersion = ModVersion };
